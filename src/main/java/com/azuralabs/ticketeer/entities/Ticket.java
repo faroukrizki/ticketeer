@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -12,9 +14,11 @@ import javax.persistence.ManyToOne;
 public class Ticket {
 	
 	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long ticketId;
 	private String eventName;
 	private Date schedule;
+	private String seat;
 	private BigDecimal price;
 	@ManyToOne
 	@JoinColumn(name="invoice")
@@ -37,6 +41,12 @@ public class Ticket {
 	}
 	public void setSchedule(Date schedule) {
 		this.schedule = schedule;
+	}
+	public void setSeat(String seat) {
+		this.seat = seat;
+	}
+	public String getSeat() {
+		return seat;
 	}
 	public BigDecimal getPrice() {
 		return price;

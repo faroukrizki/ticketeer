@@ -12,10 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.azuralabs.ticketeer.entities.Invoice;
 import com.azuralabs.ticketeer.entities.Ticket;
+import com.azuralabs.ticketeer.entities.User;
 import com.azuralabs.ticketeer.exceptions.InvoiceNotFoundException;
 import com.azuralabs.ticketeer.exceptions.TicketNotFoundException;
+import com.azuralabs.ticketeer.exceptions.UserNotFoundException;
 import com.azuralabs.ticketeer.repositories.InvoiceRepository;
 import com.azuralabs.ticketeer.repositories.TicketRepository;
+import com.azuralabs.ticketeer.repositories.UserRepository;
 
 @RestController
 public class InvoiceController {
@@ -24,30 +27,40 @@ public class InvoiceController {
 	private InvoiceRepository invoiceRepository;
 	@Autowired
 	private TicketRepository ticketRepository;
+	@Autowired
+	private UserRepository userRepository;
 	
-	@PostMapping("/create-invoice")
-	Invoice createInvoice(@RequestBody Invoice invoice) {
-		return invoiceRepository.save(invoice);
-	}
-	
-	@PostMapping("/buy-tickets/{id}")
-	Invoice addTickets(@RequestBody List<Ticket> tickets, @PathVariable Long id) {
-		Optional<Invoice> invoiceOptional = invoiceRepository.findById(id);
+	@PostMapping("/invoice/create/{username}")
+	public Invoice createNewInvoice(@RequestBody List<Ticket> tickets, @PathVariable String username) {
+		Optional<User> userOptional = userRepository.findById(username);
 		
-		if(invoiceOptional.isEmpty()) {
-			throw new InvoiceNotFoundException(id);
+		if(userOptional.isEmpty()) {
+			throw new UserNotFoundException(username);
 		}
 		
-		List<Ticket> ticketsAdded = new ArrayList<Ticket>();
+		User user = userOptional.get();
+		
+		List<Ticket> ticketList = new ArrayList<Ticket>();
+		
 		for(Ticket t: tickets) {
-			Optional<Ticket> ticketOptional = ticketRepository.findById(t.getTicketId());
-			if(ticketOptional.isEmpty()) {
+			Optional<Ticket> ticket = ticketRepository.findById(t.getTicketId());
+			
+			if(ticket.isEmpty()) {
 				throw new TicketNotFoundException(t.getTicketId());
 			}
-			ticketsAdded.add(ticketOptional.get());
+			
+			ticketList.add(ticket.get());
 		}
 		
-		ticketRepository.saveAll(ticketsAdded);
-		return invoiceOptional.get();
+		Invoice invoice = new Invoice();
+		invoice.setUser(user);		
+		invoice = invoiceRepository.save(invoice);
+		
+		for(Ticket t: ticketList) {
+			t.setInvoice(invoice);
+			ticketRepository.save(t);
+		}
+		
+		return invoice;
 	}
 }
